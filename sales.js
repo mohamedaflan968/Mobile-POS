@@ -102,9 +102,9 @@ const SalesManager = {
                     </td>
                     <td><code>${sale.billNo}</code></td>
                     <td>${itemCount}</td>
-                    <td>₹${sale.subtotal.toFixed(2)}</td>
-                    <td class="text-success">₹${sale.discount.toFixed(2)}</td>
-                    <td><strong>₹${sale.total.toFixed(2)}</strong></td>
+                    <td>Rs.${sale.subtotal.toFixed(2)}</td>
+                    <td class="text-success">Rs.${sale.discount.toFixed(2)}</td>
+                    <td><strong>Rs.${sale.total.toFixed(2)}</strong></td>
                     <td>
                         <span class="badge bg-${this.getPaymentBadge(sale.paymentMethod)}">${sale.paymentMethod}</span>
                     </td>
@@ -134,7 +134,7 @@ const SalesManager = {
         const totalBillsEl = document.getElementById('total-bills-count');
         const totalItemsEl = document.getElementById('total-items-sold');
         
-        if (totalSalesEl) totalSalesEl.textContent = `₹${totalSales.toFixed(2)}`;
+        if (totalSalesEl) totalSalesEl.textContent = `Rs.${totalSales.toFixed(2)}`;
         if (totalBillsEl) totalBillsEl.textContent = totalBills;
         if (totalItemsEl) totalItemsEl.textContent = totalItems;
         
@@ -171,14 +171,14 @@ const SalesManager = {
                 <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
                 <tbody>
                     ${sale.items.map(item => `
-                        <tr><td>${item.productName}</td><td>${item.quantity}</td><td>₹${item.price.toFixed(2)}</td><td>₹${item.total.toFixed(2)}</td></tr>
+                        <tr><td>${item.productName}</td><td>${item.quantity}</td><td>Rs.${item.price.toFixed(2)}</td><td>Rs.${item.total.toFixed(2)}</td></tr>
                     `).join('')}
                 </tbody>
             </table>
             <hr>
-            <div class="d-flex justify-content-between mb-1"><span>Subtotal:</span><span>₹${sale.subtotal.toFixed(2)}</span></div>
-            <div class="d-flex justify-content-between mb-2 text-success"><span>Discount:</span><span>-₹${sale.discount.toFixed(2)}</span></div>
-            <div class="d-flex justify-content-between mb-3"><strong>Total:</strong><strong>₹${sale.total.toFixed(2)}</strong></div>
+            <div class="d-flex justify-content-between mb-1"><span>Subtotal:</span><span>Rs.${sale.subtotal.toFixed(2)}</span></div>
+            <div class="d-flex justify-content-between mb-2 text-success"><span>Discount:</span><span>-Rs.${sale.discount.toFixed(2)}</span></div>
+            <div class="d-flex justify-content-between mb-3"><strong>Total:</strong><strong>Rs.${sale.total.toFixed(2)}</strong></div>
             <div class="d-flex justify-content-between mb-1"><span>Payment:</span><span class="badge bg-${this.getPaymentBadge(sale.paymentMethod)}">${sale.paymentMethod}</span></div>
         `;
         
@@ -241,7 +241,7 @@ const SalesManager = {
                     <p>${this.fromDate.toLocaleDateString('en-IN')} - ${this.toDate.toLocaleDateString('en-IN')}</p>
                 </div>
                 <div class="stats">
-                    <div class="stat-box"><h3>₹${totalSales.toFixed(2)}</h3><p>Total Sales</p></div>
+                    <div class="stat-box"><h3>Rs.${totalSales.toFixed(2)}</h3><p>Total Sales</p></div>
                     <div class="stat-box"><h3>${totalBills}</h3><p>Total Bills</p></div>
                     <div class="stat-box"><h3>${totalItems}</h3><p>Items Sold</p></div>
                 </div>
@@ -253,7 +253,7 @@ const SalesManager = {
         this.filteredSales.forEach(sale => {
             const date = new Date(sale.date).toLocaleDateString('en-IN');
             const itemCount = sale.items.reduce((sum, item) => sum + item.quantity, 0);
-            printContent += `<tr><td>${date}</td><td>${sale.billNo}</td><td class="text-center">${itemCount}</td><td class="text-right">₹${sale.subtotal.toFixed(2)}</td><td class="text-right">₹${sale.discount.toFixed(2)}</td><td class="text-right">₹${sale.total.toFixed(2)}</td><td>${sale.paymentMethod}</td></tr>`;
+            printContent += `<tr><td>${date}</td><td>${sale.billNo}</td><td class="text-center">${itemCount}</td><td class="text-right">Rs.${sale.subtotal.toFixed(2)}</td><td class="text-right">Rs.${sale.discount.toFixed(2)}</td><td class="text-right">Rs.${sale.total.toFixed(2)}</td><td>${sale.paymentMethod}</td></tr>`;
         });
         
         printContent += `</tbody></table><script>window.print();<\/script></body></html>`;
