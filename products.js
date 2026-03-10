@@ -62,7 +62,7 @@ const ProductsManager = {
                 <td><code>${product.barcode}</code></td>
                 <td>${product.name}</td>
                 <td><span class="badge bg-info">${product.category}</span></td>
-                <td>₹${product.price.toFixed(2)}</td>
+                <td>Rs.${product.price.toFixed(2)}</td>
                 <td><span class="${product.stock <= 10 ? 'text-danger' : ''}">${product.stock}</span></td>
                 <td>${product.discount}%</td>
                 <td>
@@ -97,7 +97,7 @@ const ProductsManager = {
                         `<div class="product-image bg-secondary d-flex align-items-center justify-content-center text-white"><i class="fas fa-box"></i></div>`}
                 </td>
                 <td>${product.name}</td>
-                <td>₹${product.price.toFixed(2)}</td>
+                <td>Rs.${product.price.toFixed(2)}</td>
                 <td>${product.stock}</td>
                 <td>
                     <button class="btn btn-success btn-sm" onclick="ProductsManager.addProductToBill(${product.id})">
