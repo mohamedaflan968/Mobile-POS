@@ -330,7 +330,7 @@ const App = {
                                 ${item.product.name}
                             </div>
                         </td>
-                        <td>₹${item.product.price.toFixed(2)}</td>
+                        <td>Rs.${item.product.price.toFixed(2)}</td>
                         <td>
                             <div class="qty-controls">
                                 <button class="btn btn-sm btn-outline-secondary" onclick="App.updateBillItemQuantity(${index}, ${item.quantity - 1})">
@@ -349,7 +349,7 @@ const App = {
                                 value="${item.discount}" min="0" max="100" 
                                 onchange="App.updateBillItemDiscount(${index}, parseFloat(this.value))">
                         </td>
-                        <td>₹${itemTotal.toFixed(2)}</td>
+                        <td>Rs.${itemTotal.toFixed(2)}</td>
                         <td>
                             <button class="btn btn-sm btn-danger" onclick="App.removeFromBill(${index})">
                                 <i class="fas fa-trash"></i>
@@ -370,9 +370,9 @@ const App = {
         const discountEl = document.getElementById('total-discount');
         const totalEl = document.getElementById('grand-total');
         
-        if (subtotalEl) subtotalEl.textContent = `₹${bill.subtotal.toFixed(2)}`;
-        if (discountEl) discountEl.textContent = `₹${bill.discount.toFixed(2)}`;
-        if (totalEl) totalEl.textContent = `₹${bill.total.toFixed(2)}`;
+        if (subtotalEl) subtotalEl.textContent = `Rs.${bill.subtotal.toFixed(2)}`;
+        if (discountEl) discountEl.textContent = `Rs.${bill.discount.toFixed(2)}`;
+        if (totalEl) totalEl.textContent = `Rs.${bill.total.toFixed(2)}`;
     },
 
     calculateChange() {
@@ -380,7 +380,7 @@ const App = {
         const bill = this.calculateBill();
         const change = Math.max(0, amountReceived - bill.total);
         const changeEl = document.getElementById('change-return');
-        if (changeEl) changeEl.value = `₹${change.toFixed(2)}`;
+        if (changeEl) changeEl.value = `Rs.${change.toFixed(2)}`;
         return change;
     },
 
@@ -424,7 +424,7 @@ const App = {
         this.showBillPreview(sale);
         this.clearBill();
         document.getElementById('amount-received').value = '';
-        document.getElementById('change-return').value = '₹0.00';
+        document.getElementById('change-return').value = 'Rs.0.00';
     },
 
     generateBillNo() {
@@ -492,23 +492,23 @@ const App = {
             <div class="bill-total">
                 <div style="display: flex; justify-content: space-between;">
                     <span>Subtotal:</span>
-                    <span>₹${sale.subtotal.toFixed(2)}</span>
+                    <span>Rs.${sale.subtotal.toFixed(2)}</span>
                 </div>
                 <div style="display: flex; justify-content: space-between;">
                     <span>Discount:</span>
-                    <span>-₹${sale.discount.toFixed(2)}</span>
+                    <span>-Rs.${sale.discount.toFixed(2)}</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 16px;">
                     <span><strong>TOTAL:</strong></span>
-                    <span><strong>₹${sale.total.toFixed(2)}</strong></span>
+                    <span><strong>Rs.${sale.total.toFixed(2)}</strong></span>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-top: 5px;">
                     <span>Paid (${sale.paymentMethod}):</span>
-                    <span>₹${sale.amountReceived.toFixed(2)}</span>
+                    <span>Rs.${sale.amountReceived.toFixed(2)}</span>
                 </div>
                 <div style="display: flex; justify-content: space-between;">
                     <span>Change:</span>
-                    <span>₹${sale.change.toFixed(2)}</span>
+                    <span>Rs.${sale.change.toFixed(2)}</span>
                 </div>
             </div>
             <div class="bill-footer">
@@ -534,7 +534,7 @@ const App = {
         const amountEl = document.getElementById('today-sales-amount');
         
         if (countEl) countEl.textContent = todaySales.length;
-        if (amountEl) amountEl.textContent = `₹${todaySales.reduce((sum, s) => sum + s.total, 0).toFixed(0)}`;
+        if (amountEl) amountEl.textContent = `Rs.${todaySales.reduce((sum, s) => sum + s.total, 0).toFixed(0)}`;
     },
 
     clearAllData() {
@@ -670,13 +670,25 @@ const App = {
         
         const addByBarcodeBtn = document.getElementById('add-by-barcode');
         if (addByBarcodeBtn) {
-            addByBarcodeBtn.addEventListener('click', () => this.handleBarcodeInput());
+            addByBarcodeBtn.addEventListener('click', () => {
+                if (typeof BarcodeScanner !== 'undefined') {
+                    BarcodeScanner.handleManualEntry();
+                } else {
+                    this.handleBarcodeInput();
+                }
+            });
         }
         
         const barcodeInput = document.getElementById('barcode-input');
         if (barcodeInput) {
             barcodeInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') this.handleBarcodeInput();
+                if (e.key === 'Enter') {
+                    if (typeof BarcodeScanner !== 'undefined') {
+                        BarcodeScanner.handleManualEntry();
+                    } else {
+                        this.handleBarcodeInput();
+                    }
+                }
             });
         }
         
