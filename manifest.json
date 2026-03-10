@@ -1,0 +1,29 @@
+{
+    "name": "Mobile POS Billing System",
+    "short_name": "Mobile POS",
+    "description": "A complete frontend-only Point of Sale system for billing and inventory management",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#667eea",
+    "theme_color": "#2c3e50",
+    "orientation": "any",
+    "icons": [
+        {
+            "src": "assets/logo.svg",
+            "sizes": "192x192 512x512",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "assets/logo.svg",
+            "sizes": "192x192 512x512",
+            "type": "image/svg+xml",
+            "purpose": "maskable"
+        }
+    ],
+    "categories": ["business", "productivity"],
+    "lang": "en",
+    "dir": "ltr",
+    "scope": "./",
+    "prefer_related_applications": false
+}
