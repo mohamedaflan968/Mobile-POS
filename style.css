@@ -55,6 +55,15 @@ body.dark-mode .form-select {
     color: var(--text-dark);
 }
 
+body.dark-mode .form-label {
+    color: #ffffff;
+}
+
+body.dark-mode .card-body .d-flex span:not(.text-success),
+body.dark-mode .card-body strong {
+    color: #ffffff;
+}
+
 body.dark-mode .form-control:focus,
 body.dark-mode .form-select:focus {
     background-color: #243352;
@@ -369,16 +378,25 @@ body.dark-mode .card {
     margin-bottom: 10px;
 }
 
-.bill-preview .shop-logo {
-    width: 60px;
-    height: 60px;
-    margin: 0 auto 10px;
+.bill-preview .bill-logo-text {
+    font-size: 28px;
+    font-weight: bold;
+    letter-spacing: 6px;
+    margin-bottom: 5px;
+    color: #000;
 }
 
 .bill-preview .bill-title {
     font-size: 16px;
     font-weight: bold;
     margin-bottom: 5px;
+}
+
+.bill-preview .dashed-line {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #555;
 }
 
 .bill-preview .bill-info {
@@ -972,4 +990,32 @@ body.light-mode #dark-mode-toggle .fa-sun {
 
 .quick-actions .btn {
     margin: 2px;
+}
+
+#whatsapp-bill {
+    transition: all 0.3s;
+}
+
+#whatsapp-bill:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+}
+
+#customer-phone {
+    font-size: 0.9rem;
+}
+
+.bill-preview .bill-footer strong {
+    font-size: 13px;
+}
+
+@media print {
+    .bill-preview .bill-logo-text {
+        font-size: 28px;
+        letter-spacing: 6px;
+    }
+    .bill-preview .dashed-line {
+        font-size: 10px;
+        letter-spacing: 1px;
+    }
 }
