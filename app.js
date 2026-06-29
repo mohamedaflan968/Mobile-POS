@@ -399,6 +399,8 @@ const App = {
             return;
         }
         
+        const customerPhone = document.getElementById('customer-phone').value.trim();
+        
         const sale = {
             id: Date.now(),
             billNo: this.generateBillNo(),
@@ -416,7 +418,8 @@ const App = {
             total: bill.total,
             paymentMethod: paymentMethod,
             amountReceived: amountReceived,
-            change: amountReceived - bill.total
+            change: amountReceived - bill.total,
+            customerPhone: customerPhone
         };
         
         this.saveSale(sale);
@@ -425,6 +428,11 @@ const App = {
         this.clearBill();
         document.getElementById('amount-received').value = '';
         document.getElementById('change-return').value = 'Rs.0.00';
+        
+        const autoSend = localStorage.getItem(APP_KEY + 'autoWhatsApp') === 'true';
+        if (autoSend && customerPhone) {
+            setTimeout(() => this.sendViaWhatsApp(sale), 500);
+        }
     },
 
     generateBillNo() {
@@ -461,9 +469,10 @@ const App = {
         const formattedDate = date.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const formattedTime = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         
+        content.setAttribute('data-sale-id', sale.id);
         content.innerHTML = `
             <div class="bill-header">
-                <img src="assets/logo.svg" class="shop-logo">
+                <div class="bill-logo-text">AS</div>
                 <div class="bill-title">${this.shopDetails.name}</div>
                 <div>${this.shopDetails.address}</div>
                 <div>Ph: ${this.shopDetails.phone}</div>
@@ -513,8 +522,11 @@ const App = {
             </div>
             <div class="bill-footer">
                 <div>Thank you for visiting!</div>
-                <div>Please visit again</div>
-                <div>Powered by Mobile POS</div>
+                <span class="dashed-line">--------------------------------</span>
+                <div>Software By</div>
+                <div><strong>A.L.M AFLAN</strong></div>
+                <div>0760562969</div>
+                <span class="dashed-line">--------------------------------</span>
             </div>
         `;
         
@@ -523,6 +535,133 @@ const App = {
 
     printBill() {
         window.print();
+    },
+
+    generateReceiptText(sale) {
+        const date = new Date(sale.date);
+        const formattedDate = date.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const formattedTime = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        const line = '================================';
+        const dashed = '--------------------------------';
+        const title = this.shopDetails.name;
+        const addr = this.shopDetails.address;
+        const phone = this.shopDetails.phone;
+        
+        let text = line + '\n';
+        text += '          AS\n';
+        text += dashed + '\n';
+        text += '  ' + title + '\n';
+        if (addr) text += '  ' + addr + '\n';
+        if (phone) text += '  ' + phone + '\n';
+        text += line + '\n';
+        text += 'Bill No: ' + sale.billNo + '\n';
+        text += 'Date: ' + formattedDate + '\n';
+        text += 'Time: ' + formattedTime + '\n';
+        text += dashed + '\n';
+        
+        const maxNameLen = 18;
+        text += 'Item'.padEnd(maxNameLen) + 'Qty  Rate   Amt\n';
+        text += dashed + '\n';
+        
+        sale.items.forEach(item => {
+            const name = item.productName.length > maxNameLen
+                ? item.productName.substring(0, maxNameLen - 1) + '~'
+                : item.productName;
+            text += name.padEnd(maxNameLen);
+            text += String(item.quantity).padStart(3) + ' ';
+            text += item.price.toFixed(2).padStart(6) + ' ';
+            text += item.total.toFixed(2).padStart(6) + '\n';
+        });
+        
+        text += dashed + '\n';
+        text += 'Subtotal:' + ' '.repeat(15) + 'Rs.' + sale.subtotal.toFixed(2) + '\n';
+        text += 'Discount:' + ' '.repeat(15) + '-Rs.' + sale.discount.toFixed(2) + '\n';
+        text += dashed + '\n';
+        text += 'TOTAL:' + ' '.repeat(17) + 'Rs.' + sale.total.toFixed(2) + '\n';
+        text += dashed + '\n';
+        text += 'Paid (' + sale.paymentMethod + '):' + ' '.repeat(9) + 'Rs.' + sale.amountReceived.toFixed(2) + '\n';
+        text += 'Change:' + ' '.repeat(16) + 'Rs.' + sale.change.toFixed(2) + '\n';
+        text += line + '\n';
+        text += '  Thank you for visiting!\n';
+        text += dashed + '\n';
+        text += 'Software By\n';
+        text += 'A.L.M AFLAN\n';
+        text += '0760562969\n';
+        text += dashed;
+        
+        return text;
+    },
+
+    sendViaWhatsApp(sale) {
+        let phone = sale.customerPhone || '';
+        
+        if (!phone) {
+            phone = prompt('Enter customer WhatsApp number with country code (e.g., +94760562969):', '');
+            if (!phone) {
+                this.showToast('WhatsApp number required!', 'warning');
+                return;
+            }
+            sale.customerPhone = phone;
+            const sales = JSON.parse(localStorage.getItem(APP_KEY + 'sales') || '[]');
+            const idx = sales.findIndex(s => s.id === sale.id);
+            if (idx !== -1) {
+                sales[idx].customerPhone = phone;
+                localStorage.setItem(APP_KEY + 'sales', JSON.stringify(sales));
+            }
+        }
+        
+        phone = phone.replace(/[^0-9]/g, '');
+        if (phone.length < 10) {
+            this.showToast('Invalid phone number!', 'error');
+            return;
+        }
+        
+        const text = this.generateReceiptText(sale);
+        const encoded = encodeURIComponent(text);
+        const url = 'https://wa.me/' + phone + '?text=' + encoded;
+        
+        window.open(url, '_blank');
+        this.showToast('WhatsApp opened with receipt!', 'success');
+    },
+
+    downloadReceiptImage() {
+        const content = document.getElementById('bill-preview-content');
+        if (!content || typeof html2canvas === 'undefined') {
+            this.showToast('Receipt content not found!', 'error');
+            return;
+        }
+        
+        App.showToast('Generating image...', 'info');
+        
+        html2canvas(content, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            allowTaint: false,
+            useCORS: true,
+            logging: false,
+            width: 300,
+            windowWidth: 300
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'receipt_' + Date.now() + '.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            App.showToast('Receipt image downloaded!', 'success');
+        }).catch(err => {
+            console.error('html2canvas error:', err);
+            App.showToast('Error generating image!', 'error');
+        });
+    },
+
+    resendReceipt(saleId) {
+        const sales = JSON.parse(localStorage.getItem(APP_KEY + 'sales') || '[]');
+        const sale = sales.find(s => s.id === saleId);
+        if (!sale) {
+            this.showToast('Sale not found!', 'error');
+            return;
+        }
+        this.sendViaWhatsApp(sale);
     },
 
     updateQuickStats() {
@@ -661,6 +800,33 @@ const App = {
         const printBillBtn = document.getElementById('print-bill');
         if (printBillBtn) {
             printBillBtn.addEventListener('click', () => this.printBill());
+        }
+        
+        const whatsappBillBtn = document.getElementById('whatsapp-bill');
+        if (whatsappBillBtn) {
+            whatsappBillBtn.addEventListener('click', () => {
+                const content = document.getElementById('bill-preview-content');
+                const saleId = content.getAttribute('data-sale-id');
+                if (saleId) {
+                    const sales = JSON.parse(localStorage.getItem(APP_KEY + 'sales') || '[]');
+                    const sale = sales.find(s => s.id === parseInt(saleId));
+                    if (sale) this.sendViaWhatsApp(sale);
+                }
+            });
+        }
+        
+        const downloadReceiptBtn = document.getElementById('download-receipt');
+        if (downloadReceiptBtn) {
+            downloadReceiptBtn.addEventListener('click', () => this.downloadReceiptImage());
+        }
+        
+        const autoWhatsAppCheck = document.getElementById('auto-whatsapp');
+        if (autoWhatsAppCheck) {
+            const saved = localStorage.getItem(APP_KEY + 'autoWhatsApp');
+            autoWhatsAppCheck.checked = saved === 'true';
+            autoWhatsAppCheck.addEventListener('change', () => {
+                localStorage.setItem(APP_KEY + 'autoWhatsApp', autoWhatsAppCheck.checked);
+            });
         }
         
         const amountReceived = document.getElementById('amount-received');
