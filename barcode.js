@@ -2,11 +2,13 @@ const BarcodeScanner = {
     html5QrcodeScanner: null,
     isScanning: false,
     lastScannedCode: null,
-    scanCooldown: 2000,
+    scanCooldown: 500,
+    recentScans: [],
+    maxRecentScans: 20,
+    scanLock: false,
 
     init() {
         if (!App.checkLoginStatus()) return;
-        
         this.setupEventListeners();
     },
 
@@ -15,7 +17,7 @@ const BarcodeScanner = {
         if (startScannerBtn) {
             startScannerBtn.addEventListener('click', () => this.startScanner());
         }
-        
+
         const stopScannerBtn = document.getElementById('stop-scanner');
         if (stopScannerBtn) {
             stopScannerBtn.addEventListener('click', () => this.stopScanner());
@@ -24,26 +26,41 @@ const BarcodeScanner = {
         const barcodeInput = document.getElementById('barcode-input');
         if (barcodeInput) {
             barcodeInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') this.handleManualEntry();
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.handleManualEntry();
+                }
             });
             barcodeInput.addEventListener('input', () => {
                 this.lastScannedCode = null;
             });
         }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                this.startScanner();
+            }
+        });
     },
 
     startScanner() {
+        if (this.isScanning) {
+            this.stopScanner();
+            return;
+        }
+
         const scannerContainer = document.getElementById('scanner-container');
         const readerDiv = document.getElementById('reader');
-        
+
         scannerContainer.style.display = 'block';
-        
+
         if (!this.html5QrcodeScanner) {
             this.html5QrcodeScanner = new Html5Qrcode("reader");
         }
-        
+
         const config = {
-            fps: 10,
+            fps: 15,
             qrbox: { width: 250, height: 150 },
             aspectRatio: 1.0,
             formatsToSupport: [
@@ -62,7 +79,7 @@ const BarcodeScanner = {
                 Html5QrcodeSupportedFormats.AZTEC
             ]
         };
-        
+
         this.html5QrcodeScanner.start(
             { facingMode: "environment" },
             config,
@@ -70,48 +87,57 @@ const BarcodeScanner = {
                 this.onScanSuccess(decodedText, decodedResult);
             },
             (errorMessage) => {
-                // Ignore scan errors - they happen frequently when no barcode is in frame
             }
         ).catch(err => {
             console.error('Error starting scanner:', err);
             App.showToast('Error starting camera. Please check permissions!', 'error');
             this.stopScanner();
         });
-        
+
         this.isScanning = true;
         App.showToast('Scanner started! Point at barcode.', 'info');
     },
 
     stopScanner() {
         const scannerContainer = document.getElementById('scanner-container');
-        
+
         if (this.html5QrcodeScanner && this.isScanning) {
             this.html5QrcodeScanner.stop().then(() => {
                 this.isScanning = false;
                 scannerContainer.style.display = 'none';
-                App.showToast('Scanner stopped!', 'info');
+                this.focusInput();
             }).catch(err => {
                 console.error('Error stopping scanner:', err);
             });
         }
     },
 
+    isDuplicate(barcode) {
+        const now = Date.now();
+        this.recentScans = this.recentScans.filter(ts => now - ts < 2000);
+        if (this.recentScans.includes(barcode)) {
+            return true;
+        }
+        this.recentScans.push(barcode);
+        if (this.recentScans.length > this.maxRecentScans) {
+            this.recentScans.shift();
+        }
+        return false;
+    },
+
     onScanSuccess(decodedText, decodedResult) {
-        const currentTime = Date.now();
-        
-        if (this.lastScannedCode === decodedText && (currentTime - this.lastScanTime) < this.scanCooldown) {
+        if (this.scanLock) return;
+
+        const barcode = decodedText.trim();
+
+        if (this.isDuplicate(barcode)) {
             return;
         }
-        
-        this.lastScannedCode = decodedText;
-        this.lastScanTime = currentTime;
-        
-        this.stopScanner();
-        
-        const barcode = decodedText.trim();
-        
+
+        this.scanLock = true;
+
         const product = App.findProductByBarcode(barcode);
-        
+
         if (product) {
             App.addToBill(product);
             this.playBeep();
@@ -119,8 +145,15 @@ const BarcodeScanner = {
             App.showToast(`${product.name} added!`, 'success');
         } else {
             document.getElementById('barcode-input').value = barcode;
+            this.playErrorBeep();
             App.showToast('Product not found! Add it to inventory first.', 'warning');
         }
+
+        this.focusInput();
+
+        setTimeout(() => {
+            this.scanLock = false;
+        }, 300);
     },
 
     handleManualEntry() {
@@ -129,9 +162,9 @@ const BarcodeScanner = {
             App.showToast('Please enter a barcode!', 'warning');
             return;
         }
-        
+
         const product = App.findProductByBarcode(barcode);
-        
+
         if (product) {
             App.addToBill(product);
             this.playBeep();
@@ -139,8 +172,11 @@ const BarcodeScanner = {
             document.getElementById('barcode-input').value = '';
             App.showToast(`${product.name} added!`, 'success');
         } else {
+            this.playErrorBeep();
             App.showToast('Product not found!', 'error');
         }
+
+        this.focusInput();
     },
 
     highlightInput() {
@@ -150,9 +186,13 @@ const BarcodeScanner = {
             setTimeout(() => {
                 input.classList.remove('bg-success', 'text-white');
             }, 300);
-            setTimeout(() => {
-                input.focus();
-            }, 350);
+        }
+    },
+
+    focusInput() {
+        const input = document.getElementById('barcode-input');
+        if (input) {
+            setTimeout(() => input.focus(), 50);
         }
     },
 
@@ -161,16 +201,16 @@ const BarcodeScanner = {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
-            
+
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            
+
             oscillator.frequency.value = 1200;
             oscillator.type = 'sine';
-            
+
             gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-            
+
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.15);
         } catch (e) {
@@ -183,16 +223,16 @@ const BarcodeScanner = {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
-            
+
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            
+
             oscillator.frequency.value = 400;
             oscillator.type = 'square';
-            
+
             gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-            
+
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.2);
         } catch (e) {
@@ -202,7 +242,7 @@ const BarcodeScanner = {
 
     simulateBarcode(barcode) {
         const product = App.findProductByBarcode(barcode);
-        
+
         if (product) {
             App.addToBill(product);
             this.playBeep();
