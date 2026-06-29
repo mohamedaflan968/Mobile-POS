@@ -167,6 +167,10 @@
                                         </select>
                                     </div>
                                     <div class="mb-3">
+                                        <label class="form-label">Customer Phone (for WhatsApp receipt)</label>
+                                        <input type="text" class="form-control" id="customer-phone" placeholder="+94760562969">
+                                    </div>
+                                    <div class="mb-3">
                                         <label class="form-label">Amount Received</label>
                                         <input type="number" class="form-control" id="amount-received" placeholder="Enter amount">
                                     </div>
@@ -362,6 +366,12 @@
                                         <label class="form-label">New Password</label>
                                         <input type="password" class="form-control" id="admin-password" placeholder="Enter new password">
                                     </div>
+                                    <div class="form-check mb-3">
+                                        <input type="checkbox" class="form-check-input" id="auto-whatsapp">
+                                        <label class="form-check-label" for="auto-whatsapp">
+                                            <i class="fab fa-whatsapp text-success"></i> Auto-send receipt via WhatsApp after payment
+                                        </label>
+                                    </div>
                                     <button class="btn btn-warning" id="change-password">
                                         <i class="fas fa-key"></i> Change Password
                                     </button>
@@ -556,6 +566,12 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" id="whatsapp-bill">
+                        <i class="fab fa-whatsapp"></i> Send via WhatsApp
+                    </button>
+                    <button type="button" class="btn btn-info" id="download-receipt">
+                        <i class="fas fa-image"></i> Download Receipt
+                    </button>
                     <button type="button" class="btn btn-primary" id="print-bill">
                         <i class="fas fa-print"></i> Print Bill
                     </button>
@@ -568,6 +584,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="app.js"></script>
     <script src="products.js"></script>
     <script src="sales.js"></script>
