@@ -109,9 +109,14 @@ const SalesManager = {
                         <span class="badge bg-${this.getPaymentBadge(sale.paymentMethod)}">${sale.paymentMethod}</span>
                     </td>
                     <td>
-                        <button class="btn btn-sm btn-info" onclick="SalesManager.viewSaleDetails(${sale.id})" title="View">
-                            <i class="fas fa-eye"></i>
-                        </button>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-sm btn-info" onclick="SalesManager.viewSaleDetails(${sale.id})" title="View">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-success" onclick="SalesManager.resendWhatsApp(${sale.id})" title="Send via WhatsApp">
+                                <i class="fab fa-whatsapp"></i>
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -153,36 +158,73 @@ const SalesManager = {
         const sale = this.sales.find(s => s.id === saleId);
         if (!sale) return;
         
+        const content = document.getElementById('bill-preview-content');
+        content.setAttribute('data-sale-id', sale.id);
+        
         const date = new Date(sale.date);
         const formattedDate = date.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const formattedTime = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         
-        let details = `
-            <div class="text-center mb-3">
-                <h5>${App.shopDetails.name}</h5>
-                <small>${App.shopDetails.address}</small><br>
-                <small>Ph: ${App.shopDetails.phone}</small>
-            </div>
-            <hr>
-            <div class="d-flex justify-content-between mb-2"><strong>Bill No:</strong><span>${sale.billNo}</span></div>
-            <div class="d-flex justify-content-between mb-2"><strong>Date:</strong><span>${formattedDate}</span></div>
-            <div class="d-flex justify-content-between mb-3"><strong>Time:</strong><span>${formattedTime}</span></div>
-            <table class="table table-sm">
-                <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
-                <tbody>
+        content.innerHTML = `
+                <div class="bill-header">
+                    <div class="bill-logo-text">AS</div>
+                    <div class="bill-title">${App.shopDetails.name}</div>
+                    <div>${App.shopDetails.address}</div>
+                    <div>Ph: ${App.shopDetails.phone}</div>
+                </div>
+                <div class="bill-info">
+                    <div><strong>Bill No:</strong> ${sale.billNo}</div>
+                    <div><strong>Date:</strong> ${formattedDate}</div>
+                    <div><strong>Time:</strong> ${formattedTime}</div>
+                </div>
+                <table>
+                    <tr class="item-row">
+                        <td class="item-name"><strong>Item</strong></td>
+                        <td style="text-align: right;"><strong>Qty</strong></td>
+                        <td style="text-align: right;"><strong>Rate</strong></td>
+                        <td style="text-align: right;"><strong>Amt</strong></td>
+                    </tr>
                     ${sale.items.map(item => `
-                        <tr><td>${item.productName}</td><td>${item.quantity}</td><td>Rs.${item.price.toFixed(2)}</td><td>Rs.${item.total.toFixed(2)}</td></tr>
+                        <tr class="item-row">
+                            <td class="item-name">${item.productName}</td>
+                            <td style="text-align: right;">${item.quantity}</td>
+                            <td style="text-align: right;">${item.price.toFixed(2)}</td>
+                            <td style="text-align: right;">${item.total.toFixed(2)}</td>
+                        </tr>
                     `).join('')}
-                </tbody>
-            </table>
-            <hr>
-            <div class="d-flex justify-content-between mb-1"><span>Subtotal:</span><span>Rs.${sale.subtotal.toFixed(2)}</span></div>
-            <div class="d-flex justify-content-between mb-2 text-success"><span>Discount:</span><span>-Rs.${sale.discount.toFixed(2)}</span></div>
-            <div class="d-flex justify-content-between mb-3"><strong>Total:</strong><strong>Rs.${sale.total.toFixed(2)}</strong></div>
-            <div class="d-flex justify-content-between mb-1"><span>Payment:</span><span class="badge bg-${this.getPaymentBadge(sale.paymentMethod)}">${sale.paymentMethod}</span></div>
+                </table>
+                <div class="bill-total">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Subtotal:</span>
+                        <span>Rs.${sale.subtotal.toFixed(2)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Discount:</span>
+                        <span>-Rs.${sale.discount.toFixed(2)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 16px;">
+                        <span><strong>TOTAL:</strong></span>
+                        <span><strong>Rs.${sale.total.toFixed(2)}</strong></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                        <span>Paid (${sale.paymentMethod}):</span>
+                        <span>Rs.${sale.amountReceived.toFixed(2)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Change:</span>
+                        <span>Rs.${sale.change.toFixed(2)}</span>
+                    </div>
+                </div>
+                <div class="bill-footer">
+                    <div>Thank you for visiting!</div>
+                    <span class="dashed-line">--------------------------------</span>
+                    <div>Software By</div>
+                    <div><strong>A.L.M AFLAN</strong></div>
+                    <div>0760562969</div>
+                    <span class="dashed-line">--------------------------------</span>
+                </div>
         `;
         
-        document.getElementById('bill-preview-content').innerHTML = details;
         new bootstrap.Modal(document.getElementById('bill-preview-modal')).show();
     },
 
@@ -261,6 +303,19 @@ const SalesManager = {
         const printWindow = window.open('', '_blank');
         printWindow.document.write(printContent);
         printWindow.document.close();
+    },
+
+    resendWhatsApp(saleId) {
+        const sale = this.sales.find(s => s.id === saleId);
+        if (!sale) {
+            App.showToast('Sale not found!', 'error');
+            return;
+        }
+        if (typeof App.resendReceipt === 'function') {
+            App.resendReceipt(saleId);
+        } else {
+            App.sendViaWhatsApp(sale);
+        }
     },
 
     setupEventListeners() {
